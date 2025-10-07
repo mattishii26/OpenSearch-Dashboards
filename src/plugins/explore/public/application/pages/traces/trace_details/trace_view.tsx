@@ -45,7 +45,8 @@ import { LogHit } from './server/ppl_request_logs';
 import { TraceLogsTab } from './public/logs/trace_logs_tab';
 import { Dataset } from '../../../../../../data/common';
 import { TraceDetailTab } from './constants/trace_detail_tabs';
-import { isSpanError } from './public/traces/ppl_resolve_helpers';
+import { parseSpanErrorType } from './public/traces/ppl_resolve_helpers';
+import { SPAN_ERROR_TYPE } from './public/utils/shared_const';
 
 /*
  * Trace:Details
@@ -233,7 +234,9 @@ export const TraceDetails: React.FC<TraceDetailsProps> = ({
     if (clientFilters.length > 0) {
       clientFilters.forEach((filter) => {
         if (filter.field === 'isError' && filter.value === true) {
-          hits = hits.filter((span: TraceHit) => isSpanError(span));
+          hits = hits.filter((span: TraceHit) => {
+            return parseSpanErrorType(span) === SPAN_ERROR_TYPE.ERROR;
+          });
         }
       });
     }
@@ -300,7 +303,10 @@ export const TraceDetails: React.FC<TraceDetailsProps> = ({
 
   // Calculate error count based on unfiltered hits to show total errors in trace
   const errorCount = useMemo(() => {
-    return unfilteredHits.filter((span: TraceHit) => isSpanError(span)).length;
+    return unfilteredHits.filter((span: TraceHit) => {
+      const spanErrorType = parseSpanErrorType(span);
+      return spanErrorType === SPAN_ERROR_TYPE.ERROR;
+    }).length;
   }, [unfilteredHits]);
 
   // Extract services in the order they appear in the data
@@ -328,6 +334,7 @@ export const TraceDetails: React.FC<TraceDetailsProps> = ({
 
     // Add a comprehensive error filter that matches the isSpanError logic
     filteredFilters.push({ field: 'isError', value: true });
+    // filteredFilters.push({ field: 'isFault', value: true });
 
     setSpanFiltersWithStorage(filteredFilters);
   };

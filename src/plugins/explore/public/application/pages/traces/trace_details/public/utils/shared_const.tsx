@@ -17,3 +17,11 @@ export const defaultColors = [
   '#AA6556',
   '#E7664C',
 ];
+
+export enum SPAN_ERROR_TYPE {
+  NO_STATUS_CODE,
+  SUCCESSFUL,
+  REDIRECTION,
+  FAULTS,
+  ERROR,
+}

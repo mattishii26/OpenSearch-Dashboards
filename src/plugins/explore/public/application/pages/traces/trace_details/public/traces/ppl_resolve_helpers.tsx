@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { SPAN_ERROR_TYPE } from '../utils/shared_const';
+
 export function convertTimestampToNanos(timestamp: string | number): number {
   if (!timestamp) return 0;
 
@@ -280,6 +282,41 @@ export function isSpanError(span: any): boolean {
   }
 
   return false;
+}
+
+export function parseSpanErrorType(span: any): SPAN_ERROR_TYPE {
+  if (!span || span['status.code'] === 2) return SPAN_ERROR_TYPE.NO_STATUS_CODE;
+
+  // Parse non-CW spans
+  const httpStatusCode = extractHttpStatusCode(span);
+  if (httpStatusCode) {
+    return httpStatusCodeParser(httpStatusCode);
+  }
+
+  // Parse CW spans
+  if (span.status) {
+    const statusCode = extractStatusCode(span.status);
+    if (statusCode === 2) {
+      return SPAN_ERROR_TYPE.NO_STATUS_CODE;
+    }
+    return httpStatusCodeParser(statusCode);
+  }
+
+  return SPAN_ERROR_TYPE.NO_STATUS_CODE;
+}
+
+function httpStatusCodeParser(statusCode: number): SPAN_ERROR_TYPE {
+  switch (statusCode) {
+    case statusCode && statusCode >= 500:
+      return SPAN_ERROR_TYPE.ERROR;
+    case statusCode && statusCode >= 400:
+      return SPAN_ERROR_TYPE.FAULTS;
+    case statusCode && statusCode >= 300:
+    case statusCode && statusCode >= 200:
+    case statusCode && statusCode >= 100:
+    default:
+      return SPAN_ERROR_TYPE.NO_STATUS_CODE;
+  }
 }
 
 function extractHttpStatusCode(span: any): number | undefined {
